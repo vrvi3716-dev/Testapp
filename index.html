@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avito Monitor Mini App</title>
+    <!-- Подключаем официальный скрипт Telegram -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #1c1c1e);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --button-color: var(--tg-theme-button-color, #007aff);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #8e8e93);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: var(--hint-color);
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--button-color);
+        }
+
+        button {
+            background-color: var(--button-color);
+            color: var(--button-text);
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:active {
+            opacity: 0.7;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #34c759; /* Зеленый цвет для успеха */
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Настройки мониторинга</h2>
+
+    <div class="form-group">
+        <label>Ссылка на категорию Авито</label>
+        <input type="text" id="avitoUrl" placeholder="https://www.avito.ru/..." value="https://www.avito.ru/moskva/telefony">
+    </div>
+
+    <div class="form-group">
+        <label>Ключевые слова (через запятую)</label>
+        <input type="text" id="keywords" placeholder="iphone 15, новый, гарантия">
+    </div>
+
+    <div class="form-group">
+        <label>Интервал проверки (мин)</label>
+        <select id="interval">
+            <option value="5">5 минут</option>
+            <option value="10" selected>10 минут</option>
+            <option value="30">30 минут</option>
+            <option value="60">1 час</option>
+        </select>
+    </div>
+
+    <button id="saveBtn">Сохранить настройки</button>
+    
+    <div class="status" id="statusMessage"></div>
+
+    <script>
+        // Инициализируем Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран
+
+        // Применяем цветовую тему Telegram (чтобы приложение не выделялось)
+        tg.setHeaderColor('secondary_bg_color');
+        
+        // Получаем данные пользователя (чтобы потом знать, кому сохранять настройки)
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            console.log("Пользователь:", user.first_name, user.id);
+        }
+
+        // Обработка нажатия на кнопку
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const url = document.getElementById('avitoUrl').value;
+            const keywords = document.getElementById('keywords').value;
+            const interval = document.getElementById('interval').value;
+            const statusDiv = document.getElementById('statusMessage');
+
+            if (!url) {
+                statusDiv.style.color = '#ff3b30'; // Красный
+                statusDiv.innerText = 'Пожалуйста, укажите ссылку!';
+                return;
+            }
+
+            // Собираем данные
+            const data = {
+                userId: user ? user.id : null,
+                avitoUrl: url,
+                keywords: keywords,
+                interval: interval
+            };
+
+            console.log("Отправляем данные на сервер:", data);
+
+            // ВИЗУАЛЬНЫЙ ЭФФЕКТ ДЛЯ ТЕСТА (пока нет сервера)
+            statusDiv.style.color = '#34c759';
+            statusDiv.innerText = 'Настройки сохранены! (Имитация)';
+
+            // --- РЕАЛЬНЫЙ ЗАПРОС НА СЕРВЕР (РАСКОММЕНТИРУЙ, КОГДА СЕРВЕР БУДЕТ ГОТОВ) ---
+            /*
+            fetch('https://твой-сервер.com/api/save-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                statusDiv.style.color = '#34c759';
+                statusDiv.innerText = 'Настройки успешно сохранены на сервере!';
+                // Можно закрыть приложение через 2 секунды
+                // setTimeout(() => tg.close(), 2000);
+            })
+            .catch(error => {
+                statusDiv.style.color = '#ff3b30';
+                statusDiv.innerText = 'Ошибка при связи с сервером.';
+                console.error(error);
+            });
+            */
+        });
+    </script>
+</body>
+</html>
